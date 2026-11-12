@@ -5,6 +5,64 @@
 SKU-level demand forecasting, inventory visibility, and replenishment decision
 support.
 
+## Quick Start
+
+### Option A — Preloaded Supabase PostgreSQL (Recommended)
+
+The project has an existing Supabase PostgreSQL database with the frozen
+16-table schema and the synthetic dataset already loaded. Use this option for
+the quickest evaluation; **do not create a schema or load data** when using
+that database. The committed `.env.eval` is the temporary evaluation
+configuration. The evaluator database role is restricted to SELECT, INSERT,
+and UPDATE and is governed by row-level security; it has no DELETE or
+schema-modification permissions. Option A requires no schema creation, data
+regeneration, CSV preflight, loading, or database verification. The temporary
+Supabase project will be deleted after evaluation.
+
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/Navadeep-15/SKU-Project.git
+Set-Location SKU-Project
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.eval .env
+python -m streamlit run Frontend/app.py
+```
+
+macOS/Linux:
+
+```bash
+git clone https://github.com/Navadeep-15/SKU-Project.git
+cd SKU-Project
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+cp .env.eval .env
+python -m streamlit run Frontend/app.py
+```
+
+The .env.eval file contains the temporary evaluation database connection URL. Follow the Quick Start instructions to launch StockLens using the preloaded Supabase database. `.env.eval` is
+intentionally allowed in Git for the evaluator workflow; `.env` remains local
+and ignored.
+
+> **Credential warning:** Once `.env.eval` contains a real database URL, the
+> committed file exposes the evaluator credentials to repository viewers and
+> may allow unauthorized access or modification within the role's permissions.
+> Deleting the temporary Supabase project later does not remove the URL from
+> Git history. The project and evaluator credentials will be temporary and
+> deleted/rotated after evaluation.
+
+### Option B — Local PostgreSQL (Backup)
+
+Use this independent setup if you do not have access to the shared Supabase
+database, or prefer to run your own database. Install PostgreSQL, configure
+`DATABASE_URL` for the local database, and follow
+[Option B: Local PostgreSQL Setup](#11-option-b-local-postgresql-backup-setup).
+This option applies the schema and loads the committed CSV data into your own
+empty database.
+
 ## 1. Project Overview
 
 StockLens is a seven-page Streamlit application backed by PostgreSQL. It brings
@@ -83,13 +141,14 @@ CSV preflight, transactional loader, and database verification are in
 ## 6. Prerequisites
 
 - Python 3.11 or a compatible version supported by the installed dependencies.
-- PostgreSQL, or a separate PostgreSQL database hosted by Supabase.
-- PostgreSQL client tools (`psql`) to apply the schema from the command line.
-- A new, empty application database/schema for initial setup.
+- A `DATABASE_URL` for either the existing evaluation Supabase database
+  (Option A) or your own PostgreSQL database (Option B).
+- PostgreSQL and its client tools (`psql` and `createdb`) are required only for
+  Option B.
 
-The schema script creates the tables and triggers without `IF NOT EXISTS`.
-Apply it only to an empty target, not to an existing StockLens or personal
-database. The script also requests the PostgreSQL `btree_gist` extension.
+The existing Supabase database is already initialized. The local schema script
+creates tables and triggers without `IF NOT EXISTS`; apply it only to your own
+new, empty database. It also requests the PostgreSQL `btree_gist` extension.
 
 ## 7. Clone Repository
 
@@ -151,8 +210,11 @@ requirements file.
 
 ## 10. Configure Environment Variables
 
-The database connection uses `DATABASE_URL`. The committed
-[`.env.example`](.env.example) contains placeholders only.
+Both database options use `DATABASE_URL`. For Option A, `.env.eval` contains
+the evaluation configuration and Quick Start copies it to the ignored local
+`.env`. The evaluator URL placeholder must be replaced with a working URL
+before the commands can connect. For Option B, use [`.env.example`](.env.example)
+as the template for your own local PostgreSQL connection.
 
 Windows PowerShell:
 
@@ -168,86 +230,88 @@ cp .env.example .env
 ${EDITOR:-vi} .env
 ```
 
-Replace the placeholder URL with the connection string for **your own new
-database**. For Supabase, use its PostgreSQL connection details and SSL
-requirement, for example the structure
+For Option A, the `.env.eval` placeholder will be manually replaced with the
+temporary Supabase evaluation URL before submission. For Option B, replace the
+`.env.example` placeholder with your own local database URL. A Supabase URL
+typically uses SSL, for example the structure
 `postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require`. This is a
 format example, not a working credential. URL-encode reserved characters in
 usernames or passwords as required by PostgreSQL URL syntax. For local
 PostgreSQL, remove `?sslmode=require` unless the local server is configured for
 SSL.
 
-Keep `.env` local. It is ignored by Git. Never paste the connection string into
-source code, a public issue, screenshots, or chat. `python-dotenv` loads the
-root `.env` for Python database utilities; environment variables take
-precedence. Streamlit deployment secrets are not required for local evaluation.
+Keep `.env` local; it is ignored by Git. `.env.eval` is explicitly allowed to
+be tracked for Option A. If it contains a real URL, that committed file exposes
+the evaluator credentials to repository viewers and may permit unauthorized
+access or modification. Deleting the project later does not remove the URL
+from Git history. `python-dotenv` loads the root `.env` for Python database
+utilities; environment variables take precedence. Streamlit deployment secrets
+are not required for local evaluation.
 
-## 11. Set Up PostgreSQL or Supabase
+## 11. Option B: Local PostgreSQL Backup Setup
 
-Use either:
+### Install PostgreSQL
 
-- A local PostgreSQL server and a newly created empty database, or
-- A new/separate Supabase PostgreSQL project/database that you control.
+For Windows, download and install PostgreSQL from the
+[official PostgreSQL Windows downloads page](https://www.postgresql.org/download/windows/).
+The installer includes the PostgreSQL server and command-line tools; ensure
+`psql` and `createdb` are available in your terminal (or use their installed
+full paths).
 
-Do not use the project author's Supabase credentials or point setup commands at
-someone else's database. A PostgreSQL role with permission to create the
-extension, tables, functions, triggers, and indexes is needed for schema
-initialization. Use an appropriately authorized database role for subsequent
-loading and verification.
+On macOS/Linux, install PostgreSQL and its client tools using the official
+[PostgreSQL download page](https://www.postgresql.org/download/) or your
+operating system's package instructions.
 
-Create a local database, if needed:
+Create a new, empty local database. The command prompts for authentication as
+configured by your local PostgreSQL installation:
+
+Windows PowerShell:
 
 ```powershell
 createdb -U postgres stocklens
 ```
 
-The equivalent command is available in macOS/Linux terminals when PostgreSQL
-client tools are installed:
+macOS/Linux:
 
 ```bash
 createdb -U postgres stocklens
 ```
 
-For Supabase, provision a separate project/database through Supabase and use
-its connection details. Do not run the schema against an existing application
-database.
+Set the root `.env` `DATABASE_URL` to your own local database, for example:
+
+```text
+DATABASE_URL=postgresql://postgres:<YOUR_LOCAL_PASSWORD>@localhost:5432/stocklens
+```
+
+This is a placeholder format, not a working password. For local PostgreSQL,
+omit `sslmode=require` unless your server is configured to require SSL.
 
 ## 12. Create Database Schema
 
-Apply the committed schema to the empty target. The following commands prompt
-for the database password rather than putting it in the command line.
+**Option B only.** Apply the committed schema to the new, empty local target.
+These commands prompt for the PostgreSQL password rather than putting it in
+the command line.
 
-Local PostgreSQL, Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 psql -h localhost -p 5432 -U postgres -d stocklens -W -v ON_ERROR_STOP=1 -f Backend/database/schema.sql
 ```
 
-Local PostgreSQL, macOS/Linux:
+macOS/Linux:
 
 ```bash
 psql -h localhost -p 5432 -U postgres -d stocklens -W -v ON_ERROR_STOP=1 -f Backend/database/schema.sql
 ```
 
-For a Supabase target, use the host, port, user, and database from your own
-project; set `PGSSLMODE=require` for the `psql` process if required by that
-connection:
-
-```powershell
-$env:PGSSLMODE = "require"
-psql -h "<your-host>" -p 5432 -U "<your-user>" -d "<your-database>" -W -v ON_ERROR_STOP=1 -f Backend/database/schema.sql
-```
-
-```bash
-PGSSLMODE=require psql -h "<your-host>" -p 5432 -U "<your-user>" -d "<your-database>" -W -v ON_ERROR_STOP=1 -f Backend/database/schema.sql
-```
-
-The schema is frozen at 16 logical tables. The command above applies the
-existing SQL file; it does not create or alter any additional project tables.
-If schema application fails, stop and inspect the error rather than repeatedly
-rerunning a partially applied script.
+The schema remains the frozen 16-table definition. If schema application
+fails, stop and inspect the error rather than repeatedly rerunning a partially
+applied script.
 
 ## 13. Load Synthetic Dataset
+
+**Option B only.** Supabase Option A already has this committed dataset loaded;
+skip this section when using the shared evaluation database.
 
 The committed dataset is loaded as-is; normal setup does not regenerate it.
 The loader preflights all 16 generated CSVs and adds the separate five-row
@@ -279,6 +343,9 @@ exports contribute the remaining ten. The zero-row anomaly files in
 `data/generated/` are not regenerated or overwritten by setup.
 
 ## 14. Verify Database Setup
+
+**Option B only.** Run this after the local load and before using Inventory
+Save. For Supabase Option A, the schema and dataset are already initialized.
 
 After loading the new target, run:
 
@@ -462,10 +529,22 @@ the project does not claim advanced AI or guaranteed business performance.
 - The development profile is not supported end-to-end by replenishment and
   anomaly generation.
 - The database loader and verification are unit-tested with mocked connections,
-  but fresh PostgreSQL initialization and live loading were not run in this
-  environment.
-- Database access and interactive Save depend on the evaluator's own
-  PostgreSQL configuration and permissions.
+  but fresh local PostgreSQL initialization and live loading were not run in
+  this environment.
+- The recommended evaluation setup uses the existing Supabase database with
+  its schema and synthetic data already loaded. The evaluator role is
+  restricted to SELECT, INSERT, and UPDATE, with row-level security and no
+  DELETE or schema-modification permissions. `.env.eval` must contain the
+  working temporary URL; its placeholder alone cannot connect. The temporary
+  Supabase project will be deleted after evaluation.
+- Local PostgreSQL is a complete independent backup option, but requires the
+  evaluator to install PostgreSQL, create a database, initialize the schema,
+  and load the committed data.
+- If `.env.eval` contains the real URL, the committed credential is visible to
+  repository viewers and can remain in Git history after the temporary
+  database is deleted.
+- Database access and interactive Save depend on the selected database URL,
+  availability, and permissions.
 - Database verification compares exact baseline row counts. Run it immediately
   after loading, before using Inventory Save or otherwise changing rows.
 - This repository does not include deployment instructions or a cloud
@@ -481,13 +560,18 @@ record, are in
 
 ## 23. Troubleshooting
 
-- **`DATABASE_URL is not set`:** create a root `.env` from `.env.example`, or
-  set `DATABASE_URL` in the process environment. Never publish the value.
-- **Connection timeout/refused:** check that your own database is running,
-  reachable, and that its host, port, SSL mode, and network allow-list are
-  correct.
-- **Schema table missing:** apply `Backend/database/schema.sql` to the intended
-  empty target, then rerun the offline preflight and database load.
+- **`DATABASE_URL is not set`:** for Option A, copy `.env.eval` to `.env`; for
+  Option B, copy `.env.example` to `.env` and set your local PostgreSQL URL.
+- **Option A cannot connect:** confirm the placeholder in `.env.eval` has been
+  replaced with the valid temporary evaluation URL and that the Supabase
+  project is available. The placeholder is not a usable connection.
+- **Connection timeout/refused:** for Option A, check Supabase availability,
+  URL, and SSL configuration. For Option B, check that your local database is
+  running and that its host, port, and credentials are correct.
+- **Schema table missing:** with Option A, confirm the evaluation URL points to
+  the preloaded database. With Option B, apply
+  `Backend/database/schema.sql` to your new, empty target, then rerun the
+  offline preflight and database load.
 - **Extension permission error:** use a database role permitted to create
   `btree_gist`, or ask the owner of your new database to enable the supported
   extension. Do not alter the schema to bypass constraints.
@@ -497,9 +581,12 @@ record, are in
 - **Load reports conflicting primary-key data:** the target is not an empty
   baseline or contains different records. Stop and use a separate new database;
   do not delete or overwrite records to force a load.
-- **`psql` is not recognized:** install PostgreSQL client tools or initialize
-  the schema through the SQL interface of your own Supabase project. This
-  project does not bundle `psql`.
+- **Permission/RLS error:** the Option A role is intentionally restricted.
+  Confirm the operation is allowed for the selected row by the configured
+  policies; the evaluator role cannot delete records or modify the schema.
+- **`psql` is not recognized:** it is needed only for Option B. Install
+  PostgreSQL client tools or use their installed full paths. Option A requires
+  no PostgreSQL client tools.
 - **Streamlit opens but has no data:** confirm the app process uses the same
   `DATABASE_URL` whose schema and data were verified.
 - **PowerShell activation is blocked:** use `.venv\Scripts\python.exe -m pip`

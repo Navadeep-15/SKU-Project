@@ -4,6 +4,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .env
+.env.*
+!.env.example
+!.env.eval
 Frontend/.streamlit/secrets.toml
 **/.streamlit/secrets.toml
 *.pem
