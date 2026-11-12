@@ -1,0 +1,11 @@
+sku_id,sku_name,category,brand,unit_cost,unit_price,lifecycle_state,launch_date,discontinue_date,created_at
+SKU-000001,Fieldstone Premium Product 001,Beverages,Fieldstone,13.55,21.49,DISCONTINUED,2025-12-27,2026-10-07,2026-10-22 00:00:00+00:00
+SKU-000002,Fieldstone Value Product 002,Personal Care,Fieldstone,5.78,8.15,ACTIVE,2022-11-02,,2026-10-22 00:00:00+00:00
+SKU-000003,Clearwater Select Product 003,Electronics,Clearwater,192.53,292.81,ACTIVE,2021-11-08,,2026-10-22 00:00:00+00:00
+SKU-000004,Bluebird Everyday Product 004,Household,Bluebird,12.61,14.61,LAUNCHED,2026-10-14,,2026-10-22 00:00:00+00:00
+SKU-000005,Redwood Everyday Product 005,Personal Care,Redwood,36.88,53.21,ACTIVE,2022-11-26,,2026-10-22 00:00:00+00:00
+SKU-000006,Cedar Grove Everyday Product 006,Household,Cedar Grove,36.45,66.43,ACTIVE,2025-08-08,,2026-10-22 00:00:00+00:00
+SKU-000007,Cedar Grove Essential Product 007,Personal Care,Cedar Grove,6.9,10.33,ACTIVE,2026-06-10,,2026-10-22 00:00:00+00:00
+SKU-000008,Northstar Premium Product 008,Electronics,Northstar,123.58,144.91,ACTIVE,2023-01-25,,2026-10-22 00:00:00+00:00
+SKU-000009,Northstar Classic Product 009,Beverages,Northstar,11.78,18.93,ACTIVE,2025-07-16,,2026-10-22 00:00:00+00:00
+SKU-000010,Bluebird Premium Product 010,Personal Care,Bluebird,52.23,87.65,ACTIVE,2025-12-11,,2026-10-22 00:00:00+00:00

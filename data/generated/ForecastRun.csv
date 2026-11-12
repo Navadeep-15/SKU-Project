@@ -1,0 +1,9 @@
+run_id,model_name,model_version,forecast_origin,horizon_days,random_seed,dataset_version,feature_cutoff_date,created_at
+RUN-000001,BASELINE_7D,v1.0;unc_min=3;weekday_min=2;cold=0;pi95,2026-10-01,7,20261022,master-data-v1.0,2026-10-01,2026-10-22 00:00:00+00:00
+RUN-000002,WEEKDAY_SEASONAL_28D,v1.0;unc_min=3;weekday_min=2;cold=0;pi95,2026-10-01,7,20261022,master-data-v1.0,2026-10-01,2026-10-22 00:00:00+00:00
+RUN-000003,BASELINE_7D,v1.0;unc_min=3;weekday_min=2;cold=0;pi95,2026-10-08,7,20261022,master-data-v1.0,2026-10-08,2026-10-22 00:00:00+00:00
+RUN-000004,WEEKDAY_SEASONAL_28D,v1.0;unc_min=3;weekday_min=2;cold=0;pi95,2026-10-08,7,20261022,master-data-v1.0,2026-10-08,2026-10-22 00:00:00+00:00
+RUN-000005,BASELINE_7D,v1.0;unc_min=3;weekday_min=2;cold=0;pi95,2026-10-15,7,20261022,master-data-v1.0,2026-10-15,2026-10-22 00:00:00+00:00
+RUN-000006,WEEKDAY_SEASONAL_28D,v1.0;unc_min=3;weekday_min=2;cold=0;pi95,2026-10-15,7,20261022,master-data-v1.0,2026-10-15,2026-10-22 00:00:00+00:00
+RUN-000007,BASELINE_7D,v1.0;unc_min=3;weekday_min=2;cold=0;pi95,2026-10-22,35,20261022,master-data-v1.0,2026-10-22,2026-10-22 00:00:00+00:00
+RUN-000008,WEEKDAY_SEASONAL_28D,v1.0;unc_min=3;weekday_min=2;cold=0;pi95,2026-10-22,7,20261022,master-data-v1.0,2026-10-22,2026-10-22 00:00:00+00:00

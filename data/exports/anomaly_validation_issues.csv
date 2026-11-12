@@ -1,0 +1,6 @@
+validation_id,table_name,rule_name,severity,record_key,issue_description,resolved_flag,detected_at
+VAL-000001,SalesHistory,STOCKOUT_CENSORED_ZERO,HIGH,SALE-STORE-000001-SKU-000001-2025-12-29,"stockout_flag=True, units_sold=0, evaluation-only actual_demand=3; forecast was unchanged when the censored zero was removed.",True,2026-10-22 00:00:00+00:00
+VAL-000002,PurchaseRecommendation,SUPPLIER_PACK_SIZE_MULTIPLE,HIGH,PO-2026-000001,"invalid quantity remainder=1; generated quantity=92, pack_size=4, MOQ=12; all generated quantities valid=True.",True,2026-10-22 00:00:00+00:00
+VAL-000003,PurchaseRecommendation,SKU_OR_ASSORTMENT_INACTIVE,HIGH,STORE-000001/SKU-000003,The recommendation was prevented.,True,2026-10-22 00:00:00+00:00
+VAL-000004,SupplierSKU,SUPPLIER_LEAD_TIME_NONNEGATIVE,HIGH,PSK-000003,rejected: SupplierSKU lead time must be nonnegative: PSK-000003.,True,2026-10-22 00:00:00+00:00
+VAL-000005,Forecast,FORECAST_ORIGIN_AND_SOURCE_PROVENANCE,HIGH,STORE-000001/SKU-000003/2026-10-08,14 future observations were present; forecast unchanged after origin cutoff=True; GroundTruthDemand input rejected=True.,True,2026-10-22 00:00:00+00:00

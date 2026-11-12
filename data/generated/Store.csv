@@ -1,0 +1,4 @@
+store_id,store_name,city,region,store_type,capacity_units,active_flag,created_at
+STORE-000001,Seattle Store 001,Seattle,WASHINGTON,URBAN,1642,True,2026-10-22 00:00:00+00:00
+STORE-000002,Portland Store 002,Portland,OREGON,URBAN,865,True,2026-10-22 00:00:00+00:00
+STORE-000003,San Francisco Store 003,San Francisco,CALIFORNIA,URBAN,972,True,2026-10-22 00:00:00+00:00
