@@ -1,28 +1,57 @@
 # StockLens test execution report
 
 **Audit date:** 2026-11-12  
-**Audit mode:** Read-only for repository data and Supabase. No application code,
-generated dataset, schema, or database record was modified.
+**Current submission-preparation checks:** Local-only. The loader utility and
+documentation were updated; generated data, frozen schema, and database
+records were not changed. No live database was accessed during this check.
 
-## Automated test suite
+## Current submission-preparation test run
 
-The existing full suite was run during this audit:
+After adding the evaluator database load/verify workflow and its unit tests:
+
+```text
+python -m pytest -q
+120 passed in 168.10s
+```
+
+Documented focused selectors were also run:
+
+| Command group | Result |
+|---|---:|
+| Forecast generation and evaluation | 19 passed |
+| Replenishment | 11 passed |
+| Database loader and dashboard database access | 25 passed |
+| Five anomaly scenarios | 10 passed |
+
+`python -m Backend.database.loader --mode preflight` passed and reported 16
+tables and 18,883 expected rows, including five PASS anomaly fixtures and five
+resolved validation issues. This is an offline CSV/schema preflight; it does
+not connect to PostgreSQL.
+
+The fresh database schema application, permanent data load, and live database
+verification were not run. `psql` was not available in the environment, and no
+separate PostgreSQL test database was provided. The project owner's Supabase
+database was not accessed. The database loader and verification tests use
+mocked connections.
+
+## Earlier requirements-audit test run (historical)
+
+The prior requirements audit recorded:
 
 ```text
 python -m pytest -q
 113 passed in 153.12s
 ```
 
+That result predates the submission-preparation loader tests; **120 passed** is
+the current full-suite result for this checkout.
+
 The suite includes generation, data validation, forecasting, replenishment,
 evaluation, database loader, anomaly, dashboard data-access, Store Evaluation,
 inventory simulation, and inventory Save tests. In particular,
 `test_all_seven_dashboard_pages_render_without_data_access_writes` uses
-Streamlit AppTest to load each current page without exceptions. The app currently
-has seven pages: six core dashboard areas and the later Store Evaluation page.
-
-The current tests do not constitute a live database write test. Loader
-idempotency and rollback tests use a fake PostgreSQL connection; this audit did
-not perform any database writes.
+Streamlit AppTest to load each current page without exceptions. The app has
+seven pages: six core dashboard areas and the later Store Evaluation page.
 
 ## Requirement count reconciliation
 

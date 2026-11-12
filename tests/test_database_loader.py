@@ -103,6 +103,11 @@ def _sku_only_report():
     return report
 
 
+@pytest.fixture(scope="module")
+def submission_report():
+    return loader.preflight_submission_dataset()
+
+
 def test_schema_order_includes_composite_foreign_key_dependencies():
     schema = loader.parse_schema()
     insertion_order = loader.get_insertion_order(schema)
@@ -207,6 +212,31 @@ def test_test_profile_preflight_accepts_empty_tables_and_checks_all_rows():
     assert report.total_rows == 18873
 
 
+def test_submission_preflight_includes_verified_anomaly_exports(submission_report):
+    report = submission_report
+
+    assert report.valid, report.issues
+    assert report.source_row_counts["AnomalyFixture"] == 5
+    assert report.source_row_counts["ValidationIssue"] == 5
+    assert report.total_rows == 18883
+    assert {
+        row["issue_type"] for row in report.rows["AnomalyFixture"]
+    } == loader.REQUIRED_ANOMALY_TYPES
+    assert all(
+        row["test_status"] == "PASS"
+        for row in report.rows["AnomalyFixture"]
+    )
+    assert all(row["resolved_flag"] for row in report.rows["ValidationIssue"])
+
+
+def test_submission_preflight_fails_when_anomaly_exports_are_missing(tmp_path):
+    report = loader.preflight_submission_dataset(exports_directory=tmp_path)
+
+    assert not report.valid
+    assert any("anomaly_fixtures.csv" in issue for issue in report.issues)
+    assert any("anomaly_validation_issues.csv" in issue for issue in report.issues)
+
+
 def test_csv_header_must_match_schema(tmp_path):
     schema = loader.parse_schema()
     csv_path = tmp_path / "SKU.csv"
@@ -258,6 +288,108 @@ def test_database_dry_run_rolls_back_after_success(monkeypatch):
         "rolled_back": True,
         "schema_name": "public",
     }
+    assert connection.rollback_count == 1
+    assert connection.closed
+
+
+def test_database_verification_checks_schema_counts_and_rolls_back(
+    monkeypatch,
+    submission_report,
+):
+    report = submission_report
+
+    class FakeVerificationConnection:
+        def __init__(self):
+            self.rollback_count = 0
+            self.closed = False
+
+        def execute(self, query, parameters=None):
+            query_text = (
+                query.as_string(None)
+                if hasattr(query, "as_string")
+                else query
+            )
+            if query_text == "BEGIN":
+                return FakeCursor()
+            if "FROM information_schema.tables" in query_text:
+                return FakeCursor([(name,) for name in report.schema])
+            table_name = re.search(
+                r'SELECT COUNT\(\*\) FROM "public"\."([^"]+)"',
+                query_text,
+            ).group(1)
+            return FakeCursor([(report.source_row_counts[table_name],)])
+
+        def rollback(self):
+            self.rollback_count += 1
+
+        def close(self):
+            self.closed = True
+
+    connection = FakeVerificationConnection()
+    monkeypatch.setattr(
+        loader,
+        "inspect_database_schema",
+        lambda connection, schema: "public",
+    )
+
+    result = loader.verify_database_dataset(
+        report,
+        connection_factory=lambda: connection,
+    )
+
+    assert result["verified_tables"] == 16
+    assert sum(result["table_row_counts"].values()) == 18883
+    assert connection.rollback_count == 1
+    assert connection.closed
+
+
+def test_database_verification_rejects_row_count_mismatch(
+    monkeypatch,
+    submission_report,
+):
+    report = submission_report
+
+    class FakeVerificationConnection:
+        def __init__(self):
+            self.rollback_count = 0
+            self.closed = False
+
+        def execute(self, query, parameters=None):
+            query_text = (
+                query.as_string(None)
+                if hasattr(query, "as_string")
+                else query
+            )
+            if query_text == "BEGIN":
+                return FakeCursor()
+            if "FROM information_schema.tables" in query_text:
+                return FakeCursor([(name,) for name in report.schema])
+            table_name = re.search(
+                r'SELECT COUNT\(\*\) FROM "public"\."([^"]+)"',
+                query_text,
+            ).group(1)
+            count = report.source_row_counts[table_name]
+            return FakeCursor([(count - 1 if table_name == "SKU" else count,)])
+
+        def rollback(self):
+            self.rollback_count += 1
+
+        def close(self):
+            self.closed = True
+
+    connection = FakeVerificationConnection()
+    monkeypatch.setattr(
+        loader,
+        "inspect_database_schema",
+        lambda connection, schema: "public",
+    )
+
+    with pytest.raises(loader.DatabaseVerificationError, match="row counts differ"):
+        loader.verify_database_dataset(
+            report,
+            connection_factory=lambda: connection,
+        )
+
     assert connection.rollback_count == 1
     assert connection.closed
 
@@ -422,3 +554,15 @@ def test_invalid_preflight_does_not_open_database_connection():
 
     with pytest.raises(loader.LoaderError, match="Preflight failed"):
         loader.run_database_dry_run(report, connection_factory=fail_if_connected)
+
+
+def test_permanent_load_cli_requires_confirmation(capsys):
+    result = loader.main(["--mode", "load"])
+
+    assert result == 2
+    assert "requires --confirm-commit" in capsys.readouterr().out
+
+
+def test_permanent_load_function_requires_explicit_confirmation(submission_report):
+    with pytest.raises(loader.LoaderError, match="explicit approval"):
+        loader.load_dataset_idempotently(submission_report)

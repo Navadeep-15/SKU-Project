@@ -23,9 +23,17 @@ from Backend.database.connection import get_connection
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_FILE = PROJECT_ROOT / "Backend" / "database" / "schema.sql"
 GENERATED_DATA_DIRECTORY = PROJECT_ROOT / "data" / "generated"
+ANOMALY_EXPORT_DIRECTORY = PROJECT_ROOT / "data" / "exports"
 HOLDOUT_ORIGIN_OFFSETS = (21, 14, 7)
 EXPECTED_TABLE_COUNT = 16
 INSERT_BATCH_SIZE = 250
+REQUIRED_ANOMALY_TYPES = {
+    "STOCKOUT_AS_ZERO_DEMAND",
+    "PACK_SIZE_IGNORED",
+    "DISCONTINUED_SKU",
+    "NEGATIVE_LEAD_TIME",
+    "FORECAST_LEAKAGE",
+}
 
 
 @dataclass(frozen=True)
@@ -84,6 +92,10 @@ class LoaderError(Exception):
 
 
 class DatabaseSchemaError(LoaderError):
+    pass
+
+
+class DatabaseVerificationError(LoaderError):
     pass
 
 
@@ -627,6 +639,95 @@ def preflight_dataset(
         issues=issues,
         profile_checks=profile_checks,
     )
+
+
+def preflight_submission_dataset(
+    csv_directory=GENERATED_DATA_DIRECTORY,
+    schema_file=SCHEMA_FILE,
+    exports_directory=ANOMALY_EXPORT_DIRECTORY,
+):
+    report = preflight_dataset(
+        csv_directory,
+        schema_file,
+        verify_test_profile=True,
+    )
+    exports_directory = Path(exports_directory)
+    supplemental_tables = {
+        "AnomalyFixture": "anomaly_fixtures.csv",
+        "ValidationIssue": "anomaly_validation_issues.csv",
+    }
+
+    for table_name, filename in supplemental_tables.items():
+        path = exports_directory / filename
+        try:
+            rows, _ = _read_table_csv(path, report.schema[table_name])
+        except (OSError, UnicodeError, csv.Error, LoaderError) as error:
+            report.issues.append(f"{filename}: {error}")
+            continue
+        report.rows[table_name].extend(rows)
+        report.source_row_counts[table_name] = len(report.rows[table_name])
+
+    fixtures = report.rows["AnomalyFixture"]
+    issues = report.rows["ValidationIssue"]
+    fixture_types = {row["issue_type"] for row in fixtures}
+    if (
+        len(fixtures) != len(REQUIRED_ANOMALY_TYPES)
+        or fixture_types != REQUIRED_ANOMALY_TYPES
+    ):
+        report.issues.append(
+            "AnomalyFixture exports must contain exactly one row for each of "
+            "the five required anomaly types."
+        )
+    if any(row["test_status"] != "PASS" for row in fixtures):
+        report.issues.append(
+            "Every required anomaly fixture must have PASS status."
+        )
+    if len(issues) != len(REQUIRED_ANOMALY_TYPES):
+        report.issues.append(
+            "ValidationIssue exports must contain exactly five scenario issues."
+        )
+    if any(not row["resolved_flag"] for row in issues):
+        report.issues.append(
+            "Controlled anomaly validation issues must be marked resolved."
+        )
+    if {row["affected_record_key"] for row in fixtures} != {
+        row["record_key"] for row in issues
+    }:
+        report.issues.append(
+            "Anomaly fixture keys do not match their ValidationIssue records."
+        )
+    if any(row["created_at"].date() != REFERENCE_DATE for row in fixtures):
+        report.issues.append(
+            "AnomalyFixture created_at values do not match REFERENCE_DATE."
+        )
+    if any(row["detected_at"].date() != REFERENCE_DATE for row in issues):
+        report.issues.append(
+            "ValidationIssue detected_at values do not match REFERENCE_DATE."
+        )
+
+    anomaly_schema = {
+        table_name: report.schema[table_name]
+        for table_name in supplemental_tables
+    }
+    anomaly_rows = {
+        table_name: report.rows[table_name]
+        for table_name in supplemental_tables
+    }
+    line_numbers_by_table = {
+        table_name: list(range(2, len(rows) + 2))
+        for table_name, rows in anomaly_rows.items()
+    }
+    _validate_keys(
+        anomaly_schema,
+        anomaly_rows,
+        line_numbers_by_table,
+        report.issues,
+    )
+    report.profile_checks.append(
+        "Controlled anomaly exports: "
+        f"{len(fixtures)} fixtures, {len(issues)} validation issues"
+    )
+    return report
 
 
 def _database_type_matches(column, database_column):
@@ -1365,6 +1466,70 @@ def load_dataset_idempotently(
         connection.close()
 
 
+def verify_database_dataset(
+    report,
+    connection_factory=get_connection,
+):
+    if not report.valid:
+        raise LoaderError("Preflight failed; database verification was not started.")
+
+    connection = connection_factory()
+    try:
+        connection.execute("BEGIN")
+        schema_name = inspect_database_schema(connection, report.schema)
+        actual_tables = {
+            row[0]
+            for row in connection.execute(
+                """
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = %s AND table_type = 'BASE TABLE'
+                """,
+                (schema_name,),
+            ).fetchall()
+        }
+        expected_tables = set(report.schema)
+        if actual_tables != expected_tables:
+            missing_tables = sorted(expected_tables - actual_tables)
+            extra_tables = sorted(actual_tables - expected_tables)
+            raise DatabaseVerificationError(
+                f"Database table set differs from the 16-table schema; "
+                f"missing={missing_tables}, extra={extra_tables}."
+            )
+
+        actual_counts = {}
+        for table_name in report.dependency_order:
+            query = sql.SQL("SELECT COUNT(*) FROM {}").format(
+                sql.Identifier(schema_name, table_name)
+            )
+            actual_counts[table_name] = connection.execute(query).fetchone()[0]
+
+        mismatches = {
+            table_name: {
+                "expected": report.source_row_counts[table_name],
+                "actual": actual_counts[table_name],
+            }
+            for table_name in report.dependency_order
+            if actual_counts[table_name] != report.source_row_counts[table_name]
+        }
+        if mismatches:
+            raise DatabaseVerificationError(
+                f"Database row counts differ from the committed dataset: {mismatches}."
+            )
+        result = {
+            "schema_name": schema_name,
+            "table_row_counts": actual_counts,
+            "verified_tables": len(actual_tables),
+        }
+        connection.rollback()
+        return result
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
 def print_preflight_report(report):
     print(f"Schema tables: {len(report.schema)}")
     print("Foreign-key insertion order:")
@@ -1389,28 +1554,48 @@ def print_preflight_report(report):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Preflight or rollback-test the generated test-profile CSVs."
+        description="Preflight, load, or verify the committed StockLens dataset."
     )
     parser.add_argument(
         "--mode",
-        choices=["preflight", "dry-run"],
+        choices=["preflight", "dry-run", "load", "verify"],
         required=True,
+        help=(
+            "preflight checks local CSVs; dry-run inserts then rolls back; "
+            "load commits idempotently; verify checks schema and row counts"
+        ),
     )
     parser.add_argument(
         "--csv-directory",
         default=str(GENERATED_DATA_DIRECTORY),
     )
     parser.add_argument(
+        "--exports-directory",
+        default=str(ANOMALY_EXPORT_DIRECTORY),
+    )
+    parser.add_argument(
         "--schema-file",
         default=str(SCHEMA_FILE),
     )
+    parser.add_argument(
+        "--confirm-commit",
+        action="store_true",
+        help="required for --mode load because it permanently writes database rows",
+    )
     args = parser.parse_args(argv)
 
+    if args.mode == "load" and not args.confirm_commit:
+        print(
+            "Database loader: FAILED; --mode load requires --confirm-commit. "
+            "No database connection was opened."
+        )
+        return 2
+
     try:
-        report = preflight_dataset(
+        report = preflight_submission_dataset(
             args.csv_directory,
             args.schema_file,
-            verify_test_profile=True,
+            args.exports_directory,
         )
         print_preflight_report(report)
         if not report.valid:
@@ -1423,14 +1608,34 @@ def main(argv=None):
                 f"{result['schema_name']!r} and rolled back."
             )
             print("Permanent data changes: none.")
+        elif args.mode == "load":
+            result = load_dataset_idempotently(
+                report,
+                confirm_commit=args.confirm_commit,
+            )
+            print(
+                "Database load: PASS; "
+                f"inserted {result['inserted_rows']} rows, skipped "
+                f"{result['identical_rows_skipped']} identical rows in "
+                f"{result['schema_name']!r}."
+            )
+        elif args.mode == "verify":
+            result = verify_database_dataset(report)
+            print(
+                "Database verification: PASS; "
+                f"{result['verified_tables']} tables and "
+                f"{sum(result['table_row_counts'].values())} rows match "
+                "the committed dataset."
+            )
         return 0
     except RowInsertError as error:
-        print(f"Database dry run: FAILED; {error}")
+        print(f"Database {args.mode}: FAILED; {error}")
         print("The transaction was rolled back; permanent data changes: none.")
         return 1
     except (LoaderError, psycopg.Error, ConnectionError, ValueError) as error:
         print(f"Database loader: FAILED; {error}")
-        print("Permanent data changes: none.")
+        if args.mode in {"preflight", "dry-run", "verify"}:
+            print("Permanent data changes: none.")
         return 1
 
 
