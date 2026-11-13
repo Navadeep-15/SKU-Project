@@ -1,7 +1,6 @@
 # StockLens — Project Ownership, Technical Contributions & AI-Assisted Development Record
 
 **Project:** SKU-Location Demand Forecasting & Replenishment (StockLens)  
-**Submission:** YottaFlex Candidate Project  
 **Development approach:** AI-assisted engineering with requirements-led technical direction, iterative review and validation  
 **Source of prompt history:** Curated, verbatim excerpts from the GitHub Copilot conversation
 
@@ -63,7 +62,7 @@ The following selected requests are reproduced verbatim and in chronological ord
 
 ## Selected original GitHub Copilot prompts
 
-### 02. Create project structure
+### 1. Create project structure
 
 *Recorded: 2026-11-11 16:26 UTC*
 
@@ -93,7 +92,7 @@ Do not implement business logic yet. Do not add unnecessary folders or technolog
 
 After creating the structure, show me the folder tree and explain the purpose of each major folder.
 ````
-### 05. Approve schema decisions
+### 2. Approve schema decisions
 
 *Recorded: 2026-11-11 16:37 UTC*
 
@@ -147,7 +146,7 @@ Do not execute SQL against Supabase.
 Do not modify other files.
 Wait for my approval before writing schema.sql.
 ````
-### 07. Final schema corrections
+### 3. Final schema corrections
 
 *Recorded: 2026-11-11 16:44 UTC*
 
@@ -171,7 +170,7 @@ Do not modify any project files.
 Do not execute SQL against Supabase.
 Wait for my approval.
 ````
-### 08. Approve SQL with ID correction
+### 4. Approve SQL with ID correction
 
 *Recorded: 2026-11-11 16:48 UTC*
 
@@ -205,7 +204,7 @@ Please make the following changes:
 7. Do not execute any SQL, connect to Supabase, create tables, or modify any other project files.
 After saving, confirm the file path and summarize exactly what you changed.
 ````
-### 11. Review master generator
+### 5. Review master generator
 
 *Recorded: 2026-11-11 17:27 UTC*
 
@@ -232,7 +231,7 @@ Do not implement daily sales, inventory, forecasting, or replenishment yet.
 
 Keep changes minimal and beginner-friendly.
 ````
-### 28. Integrate anomaly results
+### 6. Integrate anomaly results
 
 *Recorded: 2026-11-11 20:14 UTC*
 
@@ -267,7 +266,7 @@ Important:
 - Stop if any validation or database integrity check fails.
 Report the inserted/skipped counts, final table counts, and test results. Stop after Phase 8B.
 ````
-### 32. Apply StockLens branding
+### 7. Apply StockLens branding
 
 *Recorded: 2026-11-11 21:44 UTC*
 
@@ -295,7 +294,7 @@ Requirements:
 12. Run the existing tests and verify all six dashboard pages load correctly.
 Keep changes limited to frontend branding, labels, headings, descriptions, and related presentation styling. Report modified files and test results.
 ````
-### 40. Review final evaluator changes
+### 8. Review final evaluator changes
 
 *Recorded: 2026-11-12 01:22 UTC*
 
@@ -314,7 +313,7 @@ Do not modify application logic, database schema, or datasets.
 
 Do not claim live PostgreSQL initialization was tested, because it has not been performed.
 ````
-### 42. Document two database options
+### 9. Document two database options
 
 *Recorded: 2026-11-12 13:43 UTC*
 
@@ -345,7 +344,7 @@ Modify the readme Update the existing StockLens README.md to provide two databas
 - Do not stage, commit, or push changes.
 - Show the README diff after editing.
 ````
-### 43. Update README setup wording
+### 10. Update README setup wording
 
 *Recorded: 2026-11-12 13:47 UTC*
 
