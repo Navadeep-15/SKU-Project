@@ -1190,15 +1190,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Generate test-profile replenishment recommendations."
     )
-    parser.add_argument(
-        "--profile",
-        choices=["test"],
-        default="test",
-        help="Data volume profile to generate.",
-    )
     args = parser.parse_args(argv)
 
-    data = generate_replenishment_data(args.profile)
+    data = generate_replenishment_data()
     export_replenishment_data(data)
 
     recommendations = data["PurchaseRecommendation"]
@@ -1211,7 +1205,6 @@ def main(argv=None):
     blocked = int(
         (recommendations["capacity_constraint_status"] == "BLOCKED").sum()
     )
-    print(f"Profile: {args.profile}")
     print(f"Selected method: {data['selection']['selected_method']}")
     print(f"Selected current ForecastRun: {data['selected_run']['run_id']}")
     print(f"Forecast horizon: {data['selected_run']['horizon_days']} days")

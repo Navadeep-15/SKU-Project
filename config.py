@@ -1,12 +1,8 @@
 from datetime import date, timedelta
 
 
+# Single supported dataset configuration: 10 SKUs, 3 stores, 5 suppliers.
 PROFILES = {
-    "dev": {
-        "sku_count": 250,
-        "store_count": 20,
-        "supplier_count": 30,
-    },
     "test": {
         "sku_count": 10,
         "store_count": 3,
@@ -14,7 +10,7 @@ PROFILES = {
     },
 }
 
-DEFAULT_PROFILE = "dev"
+DEFAULT_PROFILE = "test"
 RANDOM_SEED = 20261022
 DATASET_VERSION = "master-data-v1.0"
 REFERENCE_DATE = date(2026, 10, 22)

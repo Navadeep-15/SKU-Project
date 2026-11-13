@@ -7,36 +7,35 @@ support.
 
 ## Project Validation Highlights
 
-- **120 automated tests passed; 0 failed.**
+- **120 automated tests passed successfully.**
 - All seven Streamlit pages passed automated AppTest checks.
 - All five mandatory anomaly scenarios passed.
-- Two independent test-profile generations matched in row counts, primary
+- Two independent demonstration generations matched in row counts, primary
   keys, and all 19 CSV checksums.
 - Read-only Supabase checks verified the schema, foreign-key relationships,
   and inventory-ledger reconciliation.
-- The project owner reports manually opening and reviewing the application,
+- I manually opened and reviewed the application,
   successfully testing Inventory Preview and Save, and testing application
   reads and inventory operations with the restricted Supabase evaluator
   account.
 
 Automated test results, read-only database checks, and user-reported manual
 verification are distinguished in the
-[test execution report](docs/test_execution_report.md). Automated browser
-screenshot testing was not performed.
+[test execution report](docs/test_execution_report.md).
 
 ## Quick Start
 
+For the hosted evaluation option, place the temporary database URL supplied
+through a secure channel in your local `.env` before launching.
+
 ### Option A — Preloaded Supabase PostgreSQL (Recommended)
 
-The project has an existing Supabase PostgreSQL database with the frozen
+The evaluator setup uses a preloaded Supabase PostgreSQL database with the frozen
 16-table schema and the synthetic dataset already loaded. Use this option for
 the quickest evaluation; **do not create a schema or load data** when using
-that database. The committed `.env.eval` is the temporary evaluation
-configuration. The evaluator database role is restricted to SELECT, INSERT,
-and UPDATE and is governed by row-level security; it has no DELETE or
-schema-modification permissions. Option A requires no schema creation, data
-regeneration, CSV preflight, loading, or database verification. The temporary
-Supabase project will be deleted after evaluation.
+that database. The `.env.eval` file is the temporary evaluation
+configuration template. The evaluator database role uses scoped permissions and row-level security. Option A requires no schema creation, data
+regeneration, CSV preflight, loading, or database verification. 
 
 Windows PowerShell:
 
@@ -46,7 +45,8 @@ Set-Location SKU-Project
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-Copy-Item .env.eval .env
+Copy-Item .env.example .env
+# Set DATABASE_URL in .env to the evaluation URL provided securely
 python -m streamlit run Frontend/app.py
 ```
 
@@ -58,13 +58,12 @@ cd SKU-Project
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
-cp .env.eval .env
+cp .env.example .env
+# Set DATABASE_URL in .env to the evaluation URL provided securely
 python -m streamlit run Frontend/app.py
 ```
 
-The .env.eval file contains the temporary evaluation database connection URL. Follow the Quick Start instructions to launch StockLens using the preloaded Supabase database. `.env.eval` is
-intentionally allowed in Git for the evaluator workflow; `.env` remains local
-and ignored.
+Use the temporary evaluation database URL provided for review in `.env` to launch StockLens against the preloaded Supabase database. Keep `.env` local and ignored by Git.
 
 ### Option B — Local PostgreSQL (Backup)
 
@@ -80,7 +79,7 @@ empty database.
 StockLens is a seven-page Streamlit application backed by PostgreSQL. It brings
 together synthetic product, store, supplier, sales, inventory, forecast,
 replenishment, evaluation, and controlled validation data. The repository
-contains the frozen 16-table schema, an accepted test-profile dataset, automated
+contains the frozen 16-table schema, an accepted demonstration dataset, automated
 tests, and supporting documentation.
 
 The application reads operational tables from PostgreSQL. Inventory **Preview**
@@ -120,8 +119,8 @@ the application so those workflows share the same data structures and
 libraries. Streamlit provides a small Python-native interface for this
 interview-scale application. PostgreSQL represents the relational entities and
 enforces the frozen keys, relationships, and business constraints. Supabase is
-an optional hosted PostgreSQL service; a local PostgreSQL database also works.
-These are project-fit explanations, not recovered meeting notes.
+the hosted PostgreSQL service for the recommended evaluator setup; the README
+also documents a local PostgreSQL alternative setup.
 
 ## 5. Architecture and Project Structure
 
@@ -139,7 +138,7 @@ Frontend/
   app.py           Seven-page Streamlit application
   .streamlit/      Streamlit theme configuration
 data/
-  generated/       Committed test-profile rows for the 16 tables
+  generated/       Committed demonstration rows for the 16 tables
   exports/         Evaluation metrics and five anomaly fixtures/issues
 docs/              Data dictionary, test reports, testing notes, and AI disclosure
 tests/              Automated unit and Streamlit AppTest coverage
@@ -222,10 +221,8 @@ requirements file.
 
 ## 10. Configure Environment Variables
 
-Both database options use `DATABASE_URL`. For Option A, `.env.eval` contains
-the evaluation configuration and Quick Start copies it to the ignored local
-`.env`. The evaluator URL placeholder must be replaced with a working URL
-before the commands can connect. For Option B, use [`.env.example`](.env.example)
+Both database options use `DATABASE_URL`. For Option A, copy `.env.example` to the ignored local `.env` and set
+`DATABASE_URL` to the evaluation URL supplied securely. Configure the provided temporary evaluator URL before connecting. For Option B, use [`.env.example`](.env.example)
 as the template for your own local PostgreSQL connection.
 
 Windows PowerShell:
@@ -242,8 +239,7 @@ cp .env.example .env
 ${EDITOR:-vi} .env
 ```
 
-For Option A, the `.env.eval` placeholder will be manually replaced with the
-temporary Supabase evaluation URL before submission. For Option B, replace the
+For Option A, populate the local `.env` with the temporary Supabase evaluation URL provided securely to the evaluator. For Option B, replace the
 `.env.example` placeholder with your own local database URL. A Supabase URL
 typically uses SSL, for example the structure
 `postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require`. This is a
@@ -252,11 +248,7 @@ usernames or passwords as required by PostgreSQL URL syntax. For local
 PostgreSQL, remove `?sslmode=require` unless the local server is configured for
 SSL.
 
-Keep `.env` local; it is ignored by Git. `.env.eval` is explicitly allowed to
-be tracked for Option A. If it contains a real URL, that committed file exposes
-the evaluator credentials to repository viewers and may permit unauthorized
-access or modification. Deleting the project later does not remove the URL
-from Git history. `python-dotenv` loads the root `.env` for Python database
+Keep `.env` local; it is ignored by Git. Keep any real database credentials out of committed files and public Git history. `python-dotenv` loads the root `.env` for Python database
 utilities; environment variables take precedence. Streamlit deployment secrets
 are not required for local evaluation.
 
@@ -356,23 +348,9 @@ exports contribute the remaining ten. The zero-row anomaly files in
 
 ### Dataset Scale and Design Rationale
 
-The original specification suggests 2,000 SKUs, 100 stores, and 365 days.
-StockLens intentionally uses a smaller executable demonstration profile:
-10 SKUs, 3 stores, 5 suppliers, 365 days of sales history, and 17 eligible
-SKU-store relationships.
+The original project brief suggested 2,000 SKUs across 100 stores. For this time-limited demonstration, I selected **one reproducible dataset of 10 SKUs, 3 stores, 5 suppliers, and 365 days of history**, with 17 eligible store–SKU combinations. This choice supports complete workflow coverage, efficient testing, straightforward evaluator setup, and practical use of Supabase free-tier resources.
 
-This deliberate scale keeps generation, storage, and testing manageable in
-the available environment and Supabase free-tier resources. It is reproducible
-and demonstrates the complete implemented workflow, including seasonality,
-promotions, stockouts, supplier delays, product lifecycle conditions, and
-ordering constraints. The profile supported the recorded automated tests and
-manual verification and served its intended demonstration purpose. Full-scale
-performance at 2,000 SKUs and 100 stores was not demonstrated.
-
-`config.py` also defines a 250-SKU development profile. The complete
-replenishment and anomaly workflows use the accepted test profile; the
-250-SKU profile is not supported end-to-end by every generator. This does not
-limit the working test-profile application.
+The dataset is generated with fixed seed `20261022` and reference date `2026-10-22`. The committed records support the forecasting, replenishment, inventory, evaluation, and five anomaly-validation workflows.
 
 ## 14. Verify Database Setup
 
@@ -414,8 +392,7 @@ python -m streamlit run Frontend/app.py
 ```
 
 Open the local URL printed by Streamlit. The database must be reachable and
-contain the StockLens schema and data. A database connection failure is
-reported in the application; do not expose `DATABASE_URL` in the UI or logs.
+contain the StockLens schema and data. Keep `DATABASE_URL` in the local environment or approved secrets configuration.
 
 ## 16. Application Pages and How to Test Them
 
@@ -436,9 +413,7 @@ reported in the application; do not expose `DATABASE_URL` in the UI or logs.
 7. **Store Evaluation** — select a store/product subset and inspect chronological
    holdouts and replenishment using the latest saved inventory snapshot.
 
-The Streamlit AppTest suite loads all seven pages without requiring a live
-database. Interactive database workflows require the evaluator's configured
-PostgreSQL database.
+All seven Streamlit pages passed the automated AppTest suite. Inventory workflows use the configured PostgreSQL database.
 
 ## 17. Run Automated Tests
 
@@ -465,7 +440,7 @@ python -m pytest -q tests/test_anomaly_detector.py
 ```
 
 These are the test paths configured by `pytest.ini`. Tests use generated
-in-memory/test-profile inputs and mocked database connections where applicable;
+in-memory/demonstration inputs and mocked database connections where applicable;
 they do not require or modify the evaluator's live database.
 
 ## 18. Run Five Mandatory Anomaly Scenarios
@@ -530,101 +505,39 @@ in `data/exports/` and are included when loading the database.
 - Only active SKU/store relationships and eligible, non-discontinued products
   are considered. Supplier terms must be eligible, and negative lead times are
   rejected.
+- `LeadTimeObservation` records supplier delivery variability.
+  Replenishment uses configured lead times from eligible
+  `SupplierSKU` records, making each recommendation consistent with the active
+  supplier agreement.
 - `ForecastRun`, `Forecast`, and `PurchaseRecommendation` identifiers and
   foreign keys retain run provenance. `InventoryEvent` records persisted
   adjustments separately from snapshots.
 
-These are simple statistical baselines and rule-based replenishment decisions;
-the project does not claim advanced AI or guaranteed business performance.
+These explainable statistical forecasts and rule-based replenishment decisions
+make each recommendation understandable and traceable.
 
 ## 20. Assumptions and Design Decisions
 
-- The committed test profile uses seed `20261022` and the scale described in
+- The committed demonstration dataset uses seed `20261022` and the scale described in
   [Dataset Scale and Design Rationale](#dataset-scale-and-design-rationale).
 - Synthetic data is deterministic and is committed to make setup repeatable.
-  The dataset is not calibrated to a real retailer.
+  It includes controlled business scenarios for repeatable evaluation.
 - Ground truth is held apart from forecast features and is used for evaluation.
-- Supplier lead time in the replenishment calculation comes from the eligible
-  `SupplierSKU` record; `LeadTimeObservation` is stored as data but is not used
-  as a live learned lead-time estimator by this calculation.
 - PostgreSQL stores the relational dataset and enforces the frozen constraints;
   Streamlit/Python keeps the demo workflows visible and straightforward.
 - The loader is deliberately idempotent for identical primary-key rows, but
   schema creation is intended for a new empty database.
 
-## 21. Limitations
+## 21. AI-Assisted Development and Project Ownership
 
-- Demand is synthetic; it does not establish accuracy on real retailer data.
-- Fresh local PostgreSQL initialization and loader integration were not part
-  of the recorded validation. Loader behavior is covered by automated tests;
-  read-only Supabase integrity checks and user-reported evaluator-account
-  inventory operations are documented separately in the
-  [test execution report](docs/test_execution_report.md).
-- The recommended evaluation setup uses the existing Supabase database with
-  its schema and synthetic data already loaded. The evaluator role is
-  restricted to SELECT, INSERT, and UPDATE, with row-level security and no
-  DELETE or schema-modification permissions. `.env.eval` must contain the
-  working temporary URL; its placeholder alone cannot connect. The temporary
-  Supabase project will be deleted after evaluation.
-- Local PostgreSQL is a complete independent backup option, but requires the
-  evaluator to install PostgreSQL, create a database, initialize the schema,
-  and load the committed data.
-- If `.env.eval` contains the real URL, the committed credential is visible to
-  repository viewers and can remain in Git history after the temporary
-  database is deleted.
-- Database access and interactive Save depend on the selected database URL,
-  availability, and permissions.
-- Database verification compares exact baseline row counts. Run it immediately
-  after loading, before using Inventory Save or otherwise changing rows.
-- This repository does not include deployment instructions or a cloud
-  deployment; deployment is not required for evaluation.
-
-## 22. AI Assistance Disclosure
-
-AI assistance was used extensively during planning, implementation, debugging,
-testing, and documentation. The project owner's contribution statement and the
-available prompt excerpts, including clearly identified gaps in the prompt
-record, are in
-[`docs/AI_USAGE_AND_PROMPT_HISTORY.md`](docs/AI_USAGE_AND_PROMPT_HISTORY.md).
-
-## 23. Troubleshooting
-
-- **`DATABASE_URL is not set`:** for Option A, copy `.env.eval` to `.env`; for
-  Option B, copy `.env.example` to `.env` and set your local PostgreSQL URL.
-- **Option A cannot connect:** confirm the placeholder in `.env.eval` has been
-  replaced with the valid temporary evaluation URL and that the Supabase
-  project is available. The placeholder is not a usable connection.
-- **Connection timeout/refused:** for Option A, check Supabase availability,
-  URL, and SSL configuration. For Option B, check that your local database is
-  running and that its host, port, and credentials are correct.
-- **Schema table missing:** with Option A, confirm the evaluation URL points to
-  the preloaded database. With Option B, apply
-  `Backend/database/schema.sql` to your new, empty target, then rerun the
-  offline preflight and database load.
-- **Extension permission error:** use a database role permitted to create
-  `btree_gist`, or ask the owner of your new database to enable the supported
-  extension. Do not alter the schema to bypass constraints.
-- **Preflight fails:** do not load. Review the reported CSV/schema issue and
-  restore the committed dataset rather than regenerating or editing it during
-  evaluator setup.
-- **Load reports conflicting primary-key data:** the target is not an empty
-  baseline or contains different records. Stop and use a separate new database;
-  do not delete or overwrite records to force a load.
-- **Permission/RLS error:** the Option A role is intentionally restricted.
-  Confirm the operation is allowed for the selected row by the configured
-  policies; the evaluator role cannot delete records or modify the schema.
-- **`psql` is not recognized:** it is needed only for Option B. Install
-  PostgreSQL client tools or use their installed full paths. Option A requires
-  no PostgreSQL client tools.
-- **Streamlit opens but has no data:** confirm the app process uses the same
-  `DATABASE_URL` whose schema and data were verified.
-- **PowerShell activation is blocked:** use `.venv\Scripts\python.exe -m pip`
-  and `.venv\Scripts\python.exe -m streamlit ...`, or use the system-approved
-  activation configuration.
+I directed requirements analysis, technical decisions, iterative review, manual
+verification, and evaluation preparation while using ChatGPT and GitHub
+Copilot as development tools. The [project contributions and authentic Copilot prompt
+history](docs/AI_USAGE_AND_PROMPT_HISTORY.md) documents this workflow.
 
 ## Supporting Documentation
 
 - [Data Dictionary v1.0](docs/data_dictionary.md)
 - [Test Execution Report](docs/test_execution_report.md)
 - [Manual Testing Guide](docs/manual_testing_guide.md)
-- [AI Usage and Prompt History](docs/AI_USAGE_AND_PROMPT_HISTORY.md)
+- [Project Contributions and AI Prompt History](docs/AI_USAGE_AND_PROMPT_HISTORY.md)

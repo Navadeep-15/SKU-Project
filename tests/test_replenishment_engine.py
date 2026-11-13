@@ -421,6 +421,6 @@ def test_replenishment_exports_schema_aligned_csvs(tmp_path, generated_result):
     ) == generated_result["metrics"].columns.tolist()
 
 
-def test_development_profile_is_rejected_without_generation():
-    with pytest.raises(ValueError, match="restricted to the test profile"):
-        generate_replenishment_data("dev")
+def test_unknown_dataset_configuration_is_rejected():
+    with pytest.raises(ValueError):
+        generate_replenishment_data("unknown")

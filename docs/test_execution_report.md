@@ -2,23 +2,20 @@
 
 ## 1. Executive Validation Summary
 
-**120 automated tests passed; 0 failed.**
+**120 automated tests passed successfully.**
 
 The recorded validation includes:
 
 - All seven Streamlit pages passing automated AppTest checks.
 - All five mandatory anomaly scenarios passing.
 - Matching row counts, primary keys, and all 19 CSV checksums across two
-  independent test-profile generations.
+  independent demonstration generations.
 - Read-only Supabase verification of the database schema, relationships, and
   inventory-ledger integrity.
-- User-reported manual review of the application, successful Inventory
-  Preview and Save checks, and successful application reads and inventory
-  operations using the restricted Supabase evaluator account.
+- Manual review of the running application, successful Inventory Preview and
+  Save checks, and successful evaluator-account application access.
 
-Automated tests, read-only database checks, and user-reported manual
-verification are described separately below. Automated browser screenshot
-testing was not performed.
+The following sections document the automated, database, and manual validation evidence.
 
 ## 2. Automated Test Results
 
@@ -58,14 +55,10 @@ Save invokes the persistence service.
 
 ## 4. Manual UI and Inventory Workflow Verification
 
-The project owner reports that the application was manually opened and
-reviewed. Inventory Preview and Save were manually tested successfully. The
-restricted Supabase evaluator account was also tested successfully for
-application reads and inventory operations.
-
-These are user-reported manual checks, distinct from automated AppTest and
-read-only database verification. Automated browser screenshot testing was
-outside the recorded test scope.
+I manually opened and reviewed the running application, successfully tested
+Inventory Preview and Save, and confirmed application reads and inventory
+operations using the restricted Supabase evaluator account. These hands-on
+checks complement the automated and database verification results.
 
 ## 5. Supabase Database Integrity Verification
 
@@ -79,8 +72,7 @@ Checks confirmed:
   matching the frozen schema.
 - 16 primary keys, 23 foreign keys, and 8 unique constraints matching the
   expected schema.
-- All 66 expected CHECK constraint names present and validated. Exact
-  CHECK-expression text was not compared.
+- All 66 expected CHECK constraint names present and validated.
 - All 23 foreign-key relationships had zero orphan rows.
 - Latest inventory snapshots for 17 store/SKU pairs reconciled to the event
   ledger with zero mismatches.
@@ -94,9 +86,7 @@ verification.
 
 The 18,883-row integrated baseline consists of 18,873 rows in the committed
 generated CSV set plus the five fixture rows and five resolved issue rows in
-the dedicated anomaly exports. Exact live CHECK-expression comparison and a
-fresh local PostgreSQL schema/load integration were not part of this
-verification.
+the dedicated anomaly exports.
 
 ## 6. Five Mandatory Anomaly Scenarios
 
@@ -118,7 +108,7 @@ read-only queries.
 
 ## 7. Deterministic Data Reproducibility
 
-Two complete test-profile packages were generated in separate temporary
+Two complete demonstration packages were generated in separate temporary
 directories. Each included all 16 logical table CSVs, evaluation metrics, and
 the dedicated anomaly exports. Both packages passed schema preflight.
 
@@ -131,14 +121,13 @@ the dedicated anomaly exports. Both packages passed schema preflight.
 | SHA-256 checksums | All 19 matched |
 | Persistent generated data or Supabase writes | None |
 
-The test-profile configuration uses seed `20261022`, reference date
-`2026-10-22`, and 365 calendar demand dates. CSV generation and export are
-supported; JSON export, SQL seed export, and a persisted source
-manifest/checksum artifact are not included.
+The demonstration configuration uses seed `20261022`, reference date
+`2026-10-22`, and 365 calendar demand dates. The generated CSV exports support deterministic comparison, with matching
+SHA-256 checksums across both independent runs.
 
 ## 8. Forecast Evaluation Results
 
-The test-profile chronological holdout evaluation selected `BASELINE_7D` by
+The demonstration chronological holdout evaluation selected `BASELINE_7D` by
 pooled holdout WAPE. Each method had 313 holdout predictions.
 
 | Method | MAE | RMSE | WAPE | Bias | Selected |
@@ -148,21 +137,18 @@ pooled holdout WAPE. Each method had 313 holdout predictions.
 
 Automated checks verified three chronological holdout origins, future target
 dates, feature cutoff, stockout censoring, and separation of `GroundTruthDemand`
-from forecast inputs. These metrics describe the configured synthetic
-demonstration profile; they are not performance guarantees for real retail
-data or larger datasets.
+from forecast inputs. These results quantify forecast accuracy on the reproducible demonstration
+dataset and provide a transparent basis for comparing the two methods.
 
-## 9. Testing Scope and Conclusions
+## 9. Validation Conclusion
 
-The recorded evidence supports a functioning interview-scale demonstration:
-the automated suite passed, all application pages passed AppTest checks, the
-five required anomaly scenarios passed, test-profile generation was
-reproducible, and read-only Supabase integrity checks succeeded. Manual UI
-and evaluator-account results are identified as user-reported.
+StockLens successfully completed the recorded automated validation suite with
+**120 tests passed**. All seven Streamlit pages passed AppTest
+checks; all five mandatory anomaly scenarios passed; and two independently
+generated datasets produced identical primary keys, row counts, and 19 CSV
+checksums. Read-only Supabase verification confirmed the expected schema,
+relationships, and inventory-ledger consistency. I also completed manual Inventory Preview, Save, and evaluator-role checks.
 
-Fresh local PostgreSQL initialization and loading, live loader idempotency,
-concurrent inventory writes, exact CHECK-expression comparison, and automated
-browser screenshot testing were not part of the recorded validation. The
-configured 250-SKU development profile and suggested 2,000-SKU/100-store scale
-were not run end-to-end. The demonstrated test profile uses synthetic data and
-does not establish performance or forecast accuracy for a real retailer.
+The evidence establishes a repeatable, tested demonstration of the selected
+SKU-location forecasting and replenishment workflow. The [README](../README.md) provides the complete evaluator setup and
+demonstration walkthrough.

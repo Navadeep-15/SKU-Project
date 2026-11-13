@@ -108,6 +108,6 @@ def test_dedicated_csv_exports_are_schema_aligned(tmp_path, anomaly_data):
     assert len(pd.read_csv(paths["ValidationIssue"])) == 5
 
 
-def test_development_profile_is_rejected_without_generation():
-    with pytest.raises(ValueError, match="restricted to the test profile"):
-        run_anomaly_validation("dev")
+def test_unknown_dataset_configuration_is_rejected():
+    with pytest.raises(ValueError):
+        run_anomaly_validation("unknown")

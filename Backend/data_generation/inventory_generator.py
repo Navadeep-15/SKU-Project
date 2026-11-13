@@ -1157,19 +1157,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Generate synthetic inventory and policy data."
     )
-    parser.add_argument(
-        "--profile",
-        choices=sorted(PROFILES),
-        default=DEFAULT_PROFILE,
-        help="Data volume profile to generate.",
-    )
     args = parser.parse_args(argv)
 
-    data = generate_inventory_data(args.profile)
+    data = generate_inventory_data()
     export_inventory_data(data)
 
     print(f"Dataset version: {DATASET_VERSION}")
-    print(f"Profile: {args.profile}")
     print(f"CSV output: {EXPORT_DIRECTORY}")
     for table_name, frame in data.items():
         print(f"{table_name}: {len(frame)} rows")

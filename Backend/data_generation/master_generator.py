@@ -616,19 +616,12 @@ def export_master_data(data, output_directory=EXPORT_DIRECTORY):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Generate synthetic master data.")
-    parser.add_argument(
-        "--profile",
-        choices=sorted(PROFILES),
-        default=DEFAULT_PROFILE,
-        help="Data volume profile to generate.",
-    )
     args = parser.parse_args(argv)
 
-    data = generate_master_data(args.profile)
+    data = generate_master_data()
     export_master_data(data)
 
     print(f"Dataset version: {DATASET_VERSION}")
-    print(f"Profile: {args.profile}")
     print(f"Reference date: {REFERENCE_DATE.isoformat()}")
     print(f"CSV output: {EXPORT_DIRECTORY}")
     for table_name, frame in data.items():

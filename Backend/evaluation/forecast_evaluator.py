@@ -286,19 +286,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Generate and evaluate test-profile SKU-store forecasts."
     )
-    parser.add_argument(
-        "--profile",
-        choices=["test"],
-        default="test",
-        help="Data volume profile to generate.",
-    )
     args = parser.parse_args(argv)
 
-    result = run_forecast_evaluation(args.profile)
+    result = run_forecast_evaluation()
     forecast_data = result["forecast_data"]
     print(f"Dataset version: {DATASET_VERSION}")
     print(f"Random seed: {RANDOM_SEED}")
-    print(f"Profile: {args.profile}")
     print(f"Holdout origins: {', '.join(map(str, result['holdout_origins']))}")
     print(f"ForecastRun: {len(forecast_data['ForecastRun'])} rows")
     print(f"Forecast: {len(forecast_data['Forecast'])} rows")

@@ -171,9 +171,6 @@ def _build_sales_records(master_data, profile_name):
             continue
 
         promotion_flags = rng.random(len(dates)) < 0.06
-        if profile_name == "dev" and record_number == 0:
-            promotion_flags[0] = True
-
         demand_mean, actual_values, available_values = _simulate_demand(
             rng,
             dates,
@@ -458,21 +455,14 @@ def export_sales_data(data, output_directory=EXPORT_DIRECTORY):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Generate synthetic daily sales data.")
-    parser.add_argument(
-        "--profile",
-        choices=sorted(PROFILES),
-        default=DEFAULT_PROFILE,
-        help="Data volume profile to generate.",
-    )
     args = parser.parse_args(argv)
 
-    data = generate_sales_data(args.profile)
+    data = generate_sales_data()
     export_sales_data(data)
 
     sales = data["SalesHistory"]
     ground_truth = data["GroundTruthDemand"]
     print(f"Dataset version: {DATASET_VERSION}")
-    print(f"Profile: {args.profile}")
     print(f"Sales window: {SALES_START_DATE} through {REFERENCE_DATE}")
     print(f"Configured window length: {SALES_HISTORY_DAYS} days")
     print(f"CSV output: {EXPORT_DIRECTORY}")

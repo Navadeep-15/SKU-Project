@@ -530,16 +530,14 @@ def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Run isolated test-profile anomaly and validation scenarios."
     )
-    parser.add_argument("--profile", choices=["test"], default="test")
     parser.add_argument(
         "--output-directory",
         default=str(DEFAULT_EXPORT_DIRECTORY),
     )
     args = parser.parse_args(argv)
 
-    data = run_anomaly_validation(args.profile)
+    data = run_anomaly_validation()
     paths = export_anomaly_results(data, args.output_directory)
-    print(f"Profile: {args.profile}")
     print(f"AnomalyFixture: {len(data['AnomalyFixture'])} rows")
     print(f"ValidationIssue: {len(data['ValidationIssue'])} rows")
     print(data["AnomalyFixture"][["issue_type", "test_status"]].to_string(index=False))
