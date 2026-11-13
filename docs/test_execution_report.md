@@ -1,243 +1,168 @@
-# StockLens test execution report
+# StockLens Test Execution Report
 
-**Audit date:** 2026-11-12  
-**Current submission-preparation checks:** Local-only. The loader utility and
-documentation were updated; generated data, frozen schema, and database
-records were not changed. No live database was accessed during this check.
+## 1. Executive Validation Summary
 
-## Current submission-preparation test run
+**120 automated tests passed; 0 failed.**
 
-After adding the evaluator database load/verify workflow and its unit tests:
+The recorded validation includes:
+
+- All seven Streamlit pages passing automated AppTest checks.
+- All five mandatory anomaly scenarios passing.
+- Matching row counts, primary keys, and all 19 CSV checksums across two
+  independent test-profile generations.
+- Read-only Supabase verification of the database schema, relationships, and
+  inventory-ledger integrity.
+- User-reported manual review of the application, successful Inventory
+  Preview and Save checks, and successful application reads and inventory
+  operations using the restricted Supabase evaluator account.
+
+Automated tests, read-only database checks, and user-reported manual
+verification are described separately below. Automated browser screenshot
+testing was not performed.
+
+## 2. Automated Test Results
+
+The full test suite completed with:
 
 ```text
 python -m pytest -q
 120 passed in 168.10s
 ```
 
-Documented focused selectors were also run:
+The suite covers data generation and validation, forecasting, replenishment,
+evaluation, database loading, anomaly detection, dashboard data access, Store
+Evaluation, inventory simulation, and inventory Save behavior.
 
-| Command group | Result |
+Recorded focused test groups:
+
+| Test group | Result |
 |---|---:|
 | Forecast generation and evaluation | 19 passed |
 | Replenishment | 11 passed |
-| Database loader and dashboard database access | 25 passed |
-| Five anomaly scenarios | 10 passed |
+| Database loader and dashboard data access | 25 passed |
+| Anomaly scenarios | 10 passed |
 
-`python -m Backend.database.loader --mode preflight` passed and reported 16
-tables and 18,883 expected rows, including five PASS anomaly fixtures and five
-resolved validation issues. This is an offline CSV/schema preflight; it does
-not connect to PostgreSQL.
+The offline dataset preflight also passed. It validated the 16 logical tables
+and 18,883 expected integrated rows: 18,873 generated rows plus five anomaly
+fixtures and five resolved validation issues. Preflight validates CSV and
+schema compatibility without connecting to PostgreSQL.
 
-The fresh database schema application, permanent data load, and live database
-verification were not run. `psql` was not available in the environment, and no
-separate PostgreSQL test database was provided. The project owner's Supabase
-database was not accessed. The database loader and verification tests use
-mocked connections.
+## 3. Streamlit Application Validation
 
-## Earlier requirements-audit test run (historical)
-
-The prior requirements audit recorded:
-
-```text
-python -m pytest -q
-113 passed in 153.12s
-```
-
-That result predates the submission-preparation loader tests; **120 passed** is
-the current full-suite result for this checkout.
-
-The suite includes generation, data validation, forecasting, replenishment,
-evaluation, database loader, anomaly, dashboard data-access, Store Evaluation,
-inventory simulation, and inventory Save tests. In particular,
+The automated test
 `test_all_seven_dashboard_pages_render_without_data_access_writes` uses
-Streamlit AppTest to load each current page without exceptions. The app has
-seven pages: six core dashboard areas and the later Store Evaluation page.
+Streamlit AppTest to load all seven pages without exceptions or database
+writes. The app includes the six core dashboard areas and Store Evaluation.
+Related AppTest coverage verifies that Preview does not persist data and that
+Save invokes the persistence service.
 
-## Requirement count reconciliation
+## 4. Manual UI and Inventory Workflow Verification
 
-The earlier 38/41 tally omitted `DATA-13`, the original requirement to avoid
-hardcoded IDs where deterministic or database-generated IDs are required.
-The final matrix retains all 41 earlier rows and adds this satisfied
-requirement: **39/42 fully satisfied, 3 partial, 0 missing**. This is the
-authoritative final tally.
+The project owner reports that the application was manually opened and
+reviewed. Inventory Preview and Save were manually tested successfully. The
+restricted Supabase evaluator account was also tested successfully for
+application reads and inventory operations.
 
-## Existing generated data and preflight
+These are user-reported manual checks, distinct from automated AppTest and
+read-only database verification. Automated browser screenshot testing was
+outside the recorded test scope.
 
-`preflight_dataset(data/generated, verify_test_profile=True)` was run against
-the existing files. It returned `valid=True`, no issues, and passed the
-test-profile SKU/store/supplier and ForecastRun seed/version/reference-date
-checks.
+## 5. Supabase Database Integrity Verification
 
-| Logical table | Existing generated CSV rows |
-|---|---:|
-| SKU | 10 |
-| Store | 3 |
-| Supplier | 5 |
-| StoreSKU | 17 |
-| SupplierSKU | 15 |
-| SalesHistory | 4,805 |
-| InventorySnapshot | 172 |
-| InventoryEvent | 7,687 |
-| LeadTimeObservation | 15 |
-| ReorderPolicy | 17 |
-| ForecastRun | 8 |
-| Forecast | 1,298 |
-| PurchaseRecommendation | 16 |
-| GroundTruthDemand | 4,805 |
-| AnomalyFixture | 0 |
-| ValidationIssue | 0 |
-| **Total** | **18,873** |
+Read-only Supabase queries were run in transactions set to `READ ONLY` and
+rolled back when complete. The verification made no database writes or schema
+changes.
 
-The five anomaly fixtures and five corresponding validation issues are separate
-CSV exports in `data/exports/`; they are not included in the 18,873-row
-`data/generated/` count. The evaluation export contains eight rows (six
-holdout-origin rows and two overall method rows).
+Checks confirmed:
 
-### Representative data coverage
-
-Observed in the existing test-profile CSVs:
-
-- Configuration: seed `20261022`, reference date `2026-10-22`, 365 calendar
-  demand dates; 10 SKUs, 3 stores, and 5 suppliers in the generated test data.
-- SKU lifecycle: 8 `ACTIVE`, 1 `LAUNCHED`, and 1 `DISCONTINUED`.
-- Assortment: 17 eligible SKU-store relationships out of 30 possible pairs.
-- Promotions: 323 rows; stockouts: 785 rows, including 71 zero-sales stockouts.
-- Genuine zero-demand rows: 271. Thirteen of 17 SKU-store series had at least
-  one genuine zero-demand day. Positive-demand-day coverage ranged from 71.78%
-  to 100%; the generator does not define a separate named intermittent-demand
-  mode.
-- Lead-time observations: 15; 7 `SUPPLIER_DELAY`, 7 `EARLY_DELIVERY`, and
-  1 `NORMAL`; observed lead times ranged from 1 to 28 days.
-- Inventory events: 7,687 (`SALE` 4,463, `RECEIPT` 2,874,
-  `ADJUSTMENT_OUT` 350). The generated snapshots reconciled to their event
+- Exactly 16 project base tables, with column order, types, and nullability
+  matching the frozen schema.
+- 16 primary keys, 23 foreign keys, and 8 unique constraints matching the
+  expected schema.
+- All 66 expected CHECK constraint names present and validated. Exact
+  CHECK-expression text was not compared.
+- All 23 foreign-key relationships had zero orphan rows.
+- Latest inventory snapshots for 17 store/SKU pairs reconciled to the event
   ledger with zero mismatches.
-- Replenishment output: 16 rows; 15 positive quantities and one zero quantity.
-  All 16 were `WITHIN_CAPACITY`; the generated sample had no blocked row.
 
-The generator implements weekday and annual seasonal factors and a promotion
-multiplier. The sample demonstrates promotions, genuine zeros, stockouts,
-supplier delays, a launch, and a discontinued SKU. It is not calibrated against
-external retail data, and the small sample should not be described as empirical
-validation of realism.
+The integrated generated baseline is 18,883 rows. Supabase contained 18,885
+rows: the same baseline plus one five-unit `ADJUSTMENT_IN` inventory event
+dated 2026-11-11 and its snapshot, consistent with the reported Save workflow.
+Read-only Store Evaluation read the saved snapshot (`on_hand=29`) and
+calculated inventory position 29. The saved rows were preserved during
+verification.
 
-## Reproducibility and exports
+The 18,883-row integrated baseline consists of 18,873 rows in the committed
+generated CSV set plus the five fixture rows and five resolved issue rows in
+the dedicated anomaly exports. Exact live CHECK-expression comparison and a
+fresh local PostgreSQL schema/load integration were not part of this
+verification.
+
+## 6. Five Mandatory Anomaly Scenarios
+
+`run_anomaly_validation("test")` generated five PASS fixtures and five
+resolved validation issues. The automated tests also checked output schema,
+deterministic results, and that scenario execution did not alter the clean
+generated CSVs.
+
+| Scenario | Condition tested | Verified behavior |
+|---|---|---|
+| `STOCKOUT_AS_ZERO_DEMAND` | Zero observed sales with a stockout flag | Censored zero sales are not treated as ordinary zero demand; removing the censored observation did not change the prediction. |
+| `PACK_SIZE_IGNORED` | Malformed order quantity 93 with pack size 4 and MOQ 12 | The fixture detected a noncompliant quantity; an in-memory validator rejected it. Generated order quantities remained MOQ/pack compliant. |
+| `DISCONTINUED_SKU` | Previously eligible SKU marked discontinued | Replenishment omitted the discontinued SKU/store pair. |
+| `NEGATIVE_LEAD_TIME` | Supplier lead time set to -1 | Replenishment rejected the negative lead time. |
+| `FORECAST_LEAKAGE` | Future-dated sales and a ground-truth-only field supplied | Forecast inputs respected the origin cutoff, and the contaminated input was rejected. |
+
+The five fixture and five issue records were also confirmed in Supabase using
+read-only queries.
+
+## 7. Deterministic Data Reproducibility
 
 Two complete test-profile packages were generated in separate temporary
 directories. Each included all 16 logical table CSVs, evaluation metrics, and
-the dedicated anomaly exports. Each temporary table set passed schema preflight.
+the dedicated anomaly exports. Both packages passed schema preflight.
 
 | Comparison | Result |
 |---|---|
-| Total logical-table rows per run | 18,883 (18,873 operational rows plus 5 anomaly fixtures and 5 validation issues) |
+| Integrated logical-table rows per run | 18,883 |
 | Per-table row counts | Identical |
 | Primary keys across all 16 tables | Identical; no duplicate keys |
-| CSV files hashed | 19 per run |
+| CSV files compared | 19 per run |
 | SHA-256 checksums | All 19 matched |
-| Temporary directory cleanup | Completed automatically |
-| `data/generated/` or Supabase writes | None |
+| Persistent generated data or Supabase writes | None |
 
-CSV generation and export are supported and tested. JSON export, SQL seed
-export, and a source manifest/checksum artifact are not provided by the project.
-The SHA-256 comparison above was performed only as an audit check.
+The test-profile configuration uses seed `20261022`, reference date
+`2026-10-22`, and 365 calendar demand dates. CSV generation and export are
+supported; JSON export, SQL seed export, and a persisted source
+manifest/checksum artifact are not included.
 
-## Forecast evaluation execution
+## 8. Forecast Evaluation Results
 
-The temporary test-profile evaluation selected `BASELINE_7D` by pooled holdout
-WAPE. Each method had 313 holdout predictions.
+The test-profile chronological holdout evaluation selected `BASELINE_7D` by
+pooled holdout WAPE. Each method had 313 holdout predictions.
 
 | Method | MAE | RMSE | WAPE | Bias | Selected |
 |---|---:|---:|---:|---:|---|
-| BASELINE_7D | 1.589649 | 2.067210 | 43.722320% | -0.418658 | Yes |
-| WEEKDAY_SEASONAL_28D | 1.690064 | 2.215173 | 46.484183% | -0.332109 | No |
+| `BASELINE_7D` | 1.589649 | 2.067210 | 43.722320% | -0.418658 | Yes |
+| `WEEKDAY_SEASONAL_28D` | 1.690064 | 2.215173 | 46.484183% | -0.332109 | No |
 
-Tests verified the three chronological holdout origins, future target dates,
-the feature cutoff, stockout censoring, and separation of `GroundTruthDemand`
-from forecast inputs. The values above are for the small configured test
-profile and are not performance guarantees for other data.
+Automated checks verified three chronological holdout origins, future target
+dates, feature cutoff, stockout censoring, and separation of `GroundTruthDemand`
+from forecast inputs. These metrics describe the configured synthetic
+demonstration profile; they are not performance guarantees for real retail
+data or larger datasets.
 
-## Mandatory anomaly execution
+## 9. Testing Scope and Conclusions
 
-`run_anomaly_validation("test")` was run and generated five PASS fixtures and
-five resolved validation issues. The anomaly tests also verified schema,
-deterministic output, and that running the scenarios did not change the clean
-generated CSVs.
+The recorded evidence supports a functioning interview-scale demonstration:
+the automated suite passed, all application pages passed AppTest checks, the
+five required anomaly scenarios passed, test-profile generation was
+reproducible, and read-only Supabase integrity checks succeeded. Manual UI
+and evaluator-account results are identified as user-reported.
 
-| Scenario | Injected/tested condition | Observed behavior | Execution status |
-|---|---|---|---|
-| STOCKOUT_AS_ZERO_DEMAND | Zero units sold with `stockout_flag=True`; evaluation-only actual demand was 3. | The prediction was unchanged when the censored zero was removed from uncensored history. | Executed by `_stockout_scenario`; PASS. |
-| PACK_SIZE_IGNORED | Deliberately malformed order quantity 93 with pack size 4 and MOQ 12. | The fixture detected remainder 1; regular generated quantity 92 was MOQ/pack compliant. An audit-only in-memory call to `validate_replenishment_data` rejected the malformed 93-unit order. | Scenario executed and validator separately exercised; PASS. |
-| DISCONTINUED_SKU | Marked a previously eligible SKU discontinued on the reference date in an isolated copy. | `create_recommendations` omitted the SKU-store pair. | Executed by `_discontinued_sku_scenario`; PASS. |
-| NEGATIVE_LEAD_TIME | Set a supplier lead time to -1 in an isolated copy. | `create_recommendations` rejected it with a nonnegative-lead-time `ValueError`. | Executed by `_negative_lead_time_scenario`; PASS. |
-| FORECAST_LEAKAGE | Supplied 14 future-dated sales rows and a `GroundTruthDemand`-only field. | Forecast stayed unchanged after origin cutoff; contaminated input was rejected. | Executed by `_forecast_leakage_scenario`; PASS. |
-
-The five fixture records and five resolved issue records were also confirmed in
-Supabase with read-only SELECT queries.
-
-## Read-only Supabase verification
-
-All queries ran in transactions started with `SET TRANSACTION READ ONLY`. The
-transactions were rolled back on close. No insert, update, delete, DDL, RLS
-change, or policy change was performed.
-
-### Schema and integrity
-
-- Exactly 16 project base tables were present; no missing or extra base tables
-  were found in the current schema.
-- Column order/types/nullability matched the frozen schema.
-- All 16 primary keys, 23 foreign keys, and 8 unique constraints matched.
-- All 66 expected CHECK constraint names were present and validated. Exact
-  CHECK-expression text was not compared because the repository's schema
-  comparator normalizes expressions by creating and dropping temporary tables,
-  which was not used in this read-only audit.
-- All 23 foreign-key relationships were validated; aggregate orphan count was
-  zero.
-- For the latest inventory snapshot per 17 store/SKU pairs, event-ledger
-  balances matched `on_hand` (0 mismatches).
-
-### Current database row counts
-
-| Logical table | Generated CSV baseline | Current Supabase |
-|---|---:|---:|
-| SKU | 10 | 10 |
-| Store | 3 | 3 |
-| Supplier | 5 | 5 |
-| StoreSKU | 17 | 17 |
-| SupplierSKU | 15 | 15 |
-| SalesHistory | 4,805 | 4,805 |
-| InventorySnapshot | 172 | 173 |
-| InventoryEvent | 7,687 | 7,688 |
-| LeadTimeObservation | 15 | 15 |
-| ReorderPolicy | 17 | 17 |
-| ForecastRun | 8 | 8 |
-| Forecast | 1,298 | 1,298 |
-| PurchaseRecommendation | 16 | 16 |
-| GroundTruthDemand | 4,805 | 4,805 |
-| AnomalyFixture | 0 | 5 |
-| ValidationIssue | 0 | 5 |
-| **Total** | **18,873** | **18,885** |
-
-The 18,873 generated operational rows plus the five fixtures and five issues
-make 18,883 rows. Supabase currently has two additional inventory rows: one
-`ADJUSTMENT_IN` event of 5 units and one snapshot dated 2026-11-11. This is
-consistent with the inventory Save workflow the user reported testing. A
-read-only Store Evaluation using that saved SKU read the latest snapshot
-(`on_hand=29`) and produced inventory position 29. The two rows were preserved;
-the audit did not write them.
-
-The 18,885 current total therefore does not mean the original generated
-operational CSVs were overwritten: all table counts match their generated
-baseline except the one saved inventory event and one saved inventory
-snapshot, and the anomaly tables contain the five expected rows each.
-
-## Limitations
-
-- No browser screenshot review was performed in this audit. UI evidence is the
-  passing Streamlit AppTest plus the user's prior report that the site and
-  inventory Preview/Save workflow work manually.
-- Live schema CHECK expressions were not compared; names and validation state
-  were checked read-only.
-- No live database write/idempotency test was run, as required by the
-  read-only audit scope.
-- No 2,000-SKU/100-store dataset was generated. That scale is optional under
-  the user's clarification and is not a compliance failure.
-
+Fresh local PostgreSQL initialization and loading, live loader idempotency,
+concurrent inventory writes, exact CHECK-expression comparison, and automated
+browser screenshot testing were not part of the recorded validation. The
+configured 250-SKU development profile and suggested 2,000-SKU/100-store scale
+were not run end-to-end. The demonstrated test profile uses synthetic data and
+does not establish performance or forecast accuracy for a real retailer.

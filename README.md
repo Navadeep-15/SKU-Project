@@ -5,6 +5,25 @@
 SKU-level demand forecasting, inventory visibility, and replenishment decision
 support.
 
+## Project Validation Highlights
+
+- **120 automated tests passed; 0 failed.**
+- All seven Streamlit pages passed automated AppTest checks.
+- All five mandatory anomaly scenarios passed.
+- Two independent test-profile generations matched in row counts, primary
+  keys, and all 19 CSV checksums.
+- Read-only Supabase checks verified the schema, foreign-key relationships,
+  and inventory-ledger reconciliation.
+- The project owner reports manually opening and reviewing the application,
+  successfully testing Inventory Preview and Save, and testing application
+  reads and inventory operations with the restricted Supabase evaluator
+  account.
+
+Automated test results, read-only database checks, and user-reported manual
+verification are distinguished in the
+[test execution report](docs/test_execution_report.md). Automated browser
+screenshot testing was not performed.
+
 ## Quick Start
 
 ### Option A — Preloaded Supabase PostgreSQL (Recommended)
@@ -46,13 +65,6 @@ python -m streamlit run Frontend/app.py
 The .env.eval file contains the temporary evaluation database connection URL. Follow the Quick Start instructions to launch StockLens using the preloaded Supabase database. `.env.eval` is
 intentionally allowed in Git for the evaluator workflow; `.env` remains local
 and ignored.
-
-> **Credential warning:** Once `.env.eval` contains a real database URL, the
-> committed file exposes the evaluator credentials to repository viewers and
-> may allow unauthorized access or modification within the role's permissions.
-> Deleting the temporary Supabase project later does not remove the URL from
-> Git history. The project and evaluator credentials will be temporary and
-> deleted/rotated after evaluation.
 
 ### Option B — Local PostgreSQL (Backup)
 
@@ -129,7 +141,7 @@ Frontend/
 data/
   generated/       Committed test-profile rows for the 16 tables
   exports/         Evaluation metrics and five anomaly fixtures/issues
-docs/              Data dictionary, audits, testing notes, and AI disclosure
+docs/              Data dictionary, test reports, testing notes, and AI disclosure
 tests/              Automated unit and Streamlit AppTest coverage
 ```
 
@@ -342,6 +354,26 @@ The existing files in `data/generated/` contain 18,873 rows; the two anomaly
 exports contribute the remaining ten. The zero-row anomaly files in
 `data/generated/` are not regenerated or overwritten by setup.
 
+### Dataset Scale and Design Rationale
+
+The original specification suggests 2,000 SKUs, 100 stores, and 365 days.
+StockLens intentionally uses a smaller executable demonstration profile:
+10 SKUs, 3 stores, 5 suppliers, 365 days of sales history, and 17 eligible
+SKU-store relationships.
+
+This deliberate scale keeps generation, storage, and testing manageable in
+the available environment and Supabase free-tier resources. It is reproducible
+and demonstrates the complete implemented workflow, including seasonality,
+promotions, stockouts, supplier delays, product lifecycle conditions, and
+ordering constraints. The profile supported the recorded automated tests and
+manual verification and served its intended demonstration purpose. Full-scale
+performance at 2,000 SKUs and 100 stores was not demonstrated.
+
+`config.py` also defines a 250-SKU development profile. The complete
+replenishment and anomaly workflows use the accepted test profile; the
+250-SKU profile is not supported end-to-end by every generator. This does not
+limit the working test-profile application.
+
 ## 14. Verify Database Setup
 
 **Option B only.** Run this after the local load and before using Inventory
@@ -507,11 +539,8 @@ the project does not claim advanced AI or guaranteed business performance.
 
 ## 20. Assumptions and Design Decisions
 
-- The committed test profile has 10 SKUs, 3 stores, 5 suppliers, and a
-  365-day sales history; the configured seed is `20261022`.
-- `config.py` also defines a 250-SKU/20-store development profile, but the
-  replenishment pipeline and anomaly runner currently restrict generation to
-  the test profile. The larger profile is not needed for this evaluator setup.
+- The committed test profile uses seed `20261022` and the scale described in
+  [Dataset Scale and Design Rationale](#dataset-scale-and-design-rationale).
 - Synthetic data is deterministic and is committed to make setup repeatable.
   The dataset is not calibrated to a real retailer.
 - Ground truth is held apart from forecast features and is used for evaluation.
@@ -526,11 +555,11 @@ the project does not claim advanced AI or guaranteed business performance.
 ## 21. Limitations
 
 - Demand is synthetic; it does not establish accuracy on real retailer data.
-- The development profile is not supported end-to-end by replenishment and
-  anomaly generation.
-- The database loader and verification are unit-tested with mocked connections,
-  but fresh local PostgreSQL initialization and live loading were not run in
-  this environment.
+- Fresh local PostgreSQL initialization and loader integration were not part
+  of the recorded validation. Loader behavior is covered by automated tests;
+  read-only Supabase integrity checks and user-reported evaluator-account
+  inventory operations are documented separately in the
+  [test execution report](docs/test_execution_report.md).
 - The recommended evaluation setup uses the existing Supabase database with
   its schema and synthetic data already loaded. The evaluator role is
   restricted to SELECT, INSERT, and UPDATE, with row-level security and no
@@ -596,9 +625,6 @@ record, are in
 ## Supporting Documentation
 
 - [Data Dictionary v1.0](docs/data_dictionary.md)
-- [Implementation Compliance](docs/implementation_compliance.md)
-- [Requirements Traceability Matrix](docs/requirements_traceability_matrix.md)
 - [Test Execution Report](docs/test_execution_report.md)
-- [Remaining Gaps](docs/remaining_gaps.md)
-- [Manual Inventory Testing Guide](docs/manual_testing_guide.md)
+- [Manual Testing Guide](docs/manual_testing_guide.md)
 - [AI Usage and Prompt History](docs/AI_USAGE_AND_PROMPT_HISTORY.md)

@@ -53,7 +53,8 @@ My involvement included:
 - Guiding development through multiple implementation phases.
 - Requesting refinements to the application interface and functionality.
 - Using AI assistance to investigate implementation issues.
-- Examining generated outputs and available test reports.
+- Reviewing generated outputs and test reports, and manually opening and
+  testing the application workflows.
 - Preparing the repository and documentation for evaluator use.
 
 Much of the source code, automated testing, and documentation was generated or modified with GitHub Copilot assistance.
@@ -114,11 +115,12 @@ GitHub Copilot was used to assist with implementing tests and running test comma
 
 The resulting test reports were used to assess whether the implementation satisfied the expected requirements.
 
-Automated tests and their results are available through the repository's test files and supporting documentation. The latest results can be reproduced using the instructions in `README.md`.
-
-The project also includes requirements-compliance documentation and database validation utilities.
-
-A successful automated test run does not guarantee that every possible scenario has been tested. Fresh PostgreSQL initialization and application execution should be verified using the evaluator setup instructions.
+Automated test results, read-only database checks, and user-reported manual
+verification are distinguished in the
+[test execution report](test_execution_report.md). The latest automated test
+suite can be reproduced using the instructions in the
+[README](../README.md). Fresh local PostgreSQL initialization and loading were
+not part of the recorded validation.
 
 ## 7. Technical Decisions and Limitations
 
@@ -128,11 +130,11 @@ PostgreSQL, hosted through Supabase during development, provides relational stor
 
 The forecasting implementation uses baseline and weekday-seasonal methods, while replenishment recommendations consider inventory position, demand, lead time, safety stock, supplier ordering constraints, and product eligibility.
 
-These implementations were developed with substantial AI assistance.
-
-The solution is intended to demonstrate the required business workflow rather than serve as a production-ready inventory management platform.
-
-Known limitations and remaining verification requirements are described in the repository's technical documentation.
+These implementations were developed with substantial AI assistance. The
+solution demonstrates the SKU-location forecasting and replenishment workflow
+at an interview scale. Its assumptions and scope are summarized in the
+[README](../README.md), while recorded validation evidence is provided in the
+[test execution report](test_execution_report.md).
 
 ## 8. Summary of AI Involvement
 
@@ -142,4 +144,6 @@ My role centered on understanding the requirements, directing development throug
 
 The source code, tests, and documentation reflect an iterative development process supported extensively by AI tools.
 
-This disclosure is intended to provide a clear account of that development approach without overstating either independent coding work or the extent of manual verification.
+This disclosure describes the AI-assisted development approach, available
+prompt excerpts, and the project owner's role without overstating independent
+coding contributions or manual verification.
